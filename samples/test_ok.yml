@@ -1,8 +1,0 @@
----
-- name: Install sos package
-  hosts: localhost
-  tasks:
-    - name: Install sos using dnf
-      ansible.builtin.dnf:
-        name: sos
-        state: present
