@@ -1,21 +1,21 @@
 apiVersion: tekton.dev/v1
 kind: PipelineRun
 metadata:
-  name: promote-dev-to-stage
+  name: promote-dev-to-main
 spec:
   pipelineRef:
     name: ansible-lint-pipeline
   params:
     - name: git-url
-      value: https://github.com/rrbanda/ansible-tekton.git
+      value: https://github.com/rrbanda/ansible-openshift-pipelines.git
     - name: git-revision
       value: dev
     - name: target-repo-url
-      value: https://github.com/rrbanda/ansible-tekton.git
+      value: github.com/rrbanda/ansible-openshift-pipelines.git
     - name: pr-base-branch
-      value: stage
+      value: main
     - name: target-branch
-      value: stage
+      value: main
   workspaces:
     - name: shared-workspace
       persistentVolumeClaim:
