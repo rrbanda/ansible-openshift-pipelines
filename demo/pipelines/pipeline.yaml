@@ -1,0 +1,37 @@
+apiVersion: tekton.dev/v1
+kind: Pipeline
+metadata:
+  name: ansible-pipeline
+spec:
+  workspaces:
+    - name: shared-workspace
+  params:
+    - name: git-url
+      type: string
+    - name: git-revision
+      type: string
+      default: main
+  tasks:
+    - name: clone-repo
+      taskRef:
+        name: git-clone
+        kind: ClusterTask
+      params:
+        - name: url
+          value: $(params.git-url)
+        - name: revision
+          value: $(params.git-revision)
+        - name: depth
+          value: "1"
+      workspaces:
+        - name: output
+          workspace: shared-workspace
+    - name: bash-validate
+      runAfter:
+        - clone-repo
+      taskRef:
+        name: bash-validate
+      workspaces:
+        - name: source
+          workspace: shared-workspace
+

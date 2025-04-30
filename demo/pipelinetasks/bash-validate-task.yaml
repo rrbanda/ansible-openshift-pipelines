@@ -1,0 +1,30 @@
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: bash-validate
+spec:
+  workspaces:
+    - name: source
+  steps:
+    - name: check-metadata-and-grep
+      image: registry.access.redhat.com/ubi9/ubi-minimal
+      script: |
+        #!/bin/sh
+        cd $(workspaces.source.path)
+
+        echo "🔍 Checking for metadata.json..."
+        if [ -f metadata.json ]; then
+          echo "✅ Found metadata.json"
+        else
+          echo "❌ metadata.json not found"
+          exit 1
+        fi
+
+        echo "🔍 Grepping for 'ansible_password'..."
+        if grep -r "ansible_password" .; then
+          echo "❌ 'ansible_password' found — this is a violation"
+          exit 1
+        else
+          echo "✅ 'ansible_password' not found"
+          exit 0
+        fi
