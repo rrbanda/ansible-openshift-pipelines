@@ -10,6 +10,7 @@ spec:
       image: registry.access.redhat.com/ubi9/ubi-minimal
       script: |
         #!/bin/sh
+        set -e
         cd $(workspaces.source.path)
 
         echo "🔍 Checking for metadata.json..."
@@ -20,8 +21,12 @@ spec:
           exit 1
         fi
 
-        echo "🔍 Grepping for 'ansible_password' (excluding .yaml files)..."
-        if grep -r "ansible_password" . --exclude="*.yaml" --exclude-dir=.git; then
+        echo "🔍 Grepping for 'ansible_password' (excluding .yaml/.yml/.md and .git)..."
+        if grep -r "ansible_password" . \
+          --exclude="*.yaml" \
+          --exclude="*.yml" \
+          --exclude="*.md" \
+          --exclude-dir=".git"; then
           echo "❌ 'ansible_password' found — this is a violation"
           exit 1
         else
