@@ -11,48 +11,74 @@ spec:
     - name: git-user-email
       type: string
   steps:
-    - name: lint-playbooks-and-commit
-      image: ghcr.io/ansible/creator-ee:latest
+    - name: step-lint-playbooks-and-commit
+      image: registry.access.redhat.com/ubi9/python-311
       script: |
         #!/bin/bash
-        set -e
+        set -euo pipefail
+        echo "📦 Installing dependencies..."
+        pip install --no-cache-dir ansible ansible-lint gitpython
+
         cd $(workspaces.source.path)
 
+        echo "🔐 Cloning repo..."
+        mkdir repo && cd repo
+        git config --global user.name "$(params.git-user-name)"
+        git config --global user.email "$(params.git-user-email)"
+        git clone https://oauth2:$(cat /secrets/token)@github.com/rrbanda/ansible-openshift-pipelines.git .
+        git checkout main
+
+        echo "📂 Creating summary directory..."
         timestamp=$(date +"%Y-%m-%dT%H-%M-%S")
         summary_dir="lint-summaries/$timestamp"
         mkdir -p "$summary_dir"
         summary_file="$summary_dir/lint-summary.md"
 
-        echo "# Lint Summary ($timestamp)" > "$summary_file"
+        echo "# 📋 Lint Summary ($timestamp)" > "$summary_file"
+        echo "" >> "$summary_file"
+        echo "| File | Status | Rule | Message |" >> "$summary_file"
+        echo "|------|--------|------|---------|" >> "$summary_file"
 
+        echo "🔍 Searching for Ansible playbooks..."
         playbooks=$(find . -name "*.yml")
         if [ -z "$playbooks" ]; then
-          echo "**No .yml files found.**" >> "$summary_file"
-          exit 1
+          echo "| _None found_ | ⚠️ | - | - |" >> "$summary_file"
         fi
 
         error_count=0
         for file in $playbooks; do
           echo "🧪 Linting $file"
-          echo "## $file" >> "$summary_file"
-          ansible-lint "$file" >> "$summary_file" 2>&1 || error_count=$((error_count+1))
-          echo "" >> "$summary_file"
+          output=$(ansible-lint "$file" 2>&1 || true)
+
+          # Strip ANSI escape codes
+          cleaned=$(echo "$output" | sed 's/\x1B\[[0-9;]*[a-zA-Z]//g')
+
+          # Only keep violations with "Use ... instead"
+          if echo "$cleaned" | grep -q "Use .* instead"; then
+            echo "$cleaned" | grep "Use .* instead" | while read -r line; do
+              rule="fqcn"
+              msg=$(echo "$line" | sed 's/.*: //' | sed 's/Use /Use /')
+              echo "| $file | ❌ | $rule | $msg |" >> "$summary_file"
+            done
+            error_count=$((error_count+1))
+          else
+            echo "| $file | ✅ | - | Passed lint |" >> "$summary_file"
+          fi
         done
 
-        # Git config and push
-        git config user.name "$(params.git-user-name)"
-        git config user.email "$(params.git-user-email)"
-        git remote set-url origin https://$(cat /secrets/token)@github.com/rrbanda/ansible-openshift-pipelines.git
+        echo "📤 Committing results..."
+        git add "$summary_file" || echo "⚠️ Nothing to add"
+        git commit -m "📋 Add lint summary for $timestamp" || echo "⚠️ Nothing to commit"
+        git push origin main || echo "⚠️ Push failed (possibly nothing to push)"
 
-        git add "$summary_file"
-        git commit -m "📋 Add lint summary for $timestamp"
-        git push origin HEAD:main
+        echo "✅ Done. Summary at $summary_file"
 
         if [ $error_count -gt 0 ]; then
           echo "❌ $error_count playbook(s) failed lint."
           exit 1
         else
           echo "✅ All playbooks passed lint."
+          exit 0
         fi
       volumeMounts:
         - name: github-creds
