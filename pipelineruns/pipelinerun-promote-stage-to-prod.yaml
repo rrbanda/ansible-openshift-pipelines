@@ -7,11 +7,11 @@ spec:
     name: ansible-lint-pipeline
   params:
     - name: git-url
-      value: https://github.com/rrbanda/ansible-tekton.git
+      value: https://github.com/rrbanda/ansible-openshift-pipelines.git
     - name: git-revision
       value: stage
     - name: target-repo-url
-      value: https://github.com/rrbanda/ansible-tekton.git
+      value: github.com/rrbanda/ansible-openshift-pipelines.git
     - name: pr-base-branch
       value: prod
     - name: target-branch
