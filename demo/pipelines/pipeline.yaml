@@ -11,6 +11,12 @@ spec:
     - name: git-revision
       type: string
       default: main
+    - name: git-user-name
+      type: string
+      default: "ansible-bot"
+    - name: git-user-email
+      type: string
+      default: "bot@example.com"
   tasks:
     - name: clone-repo
       taskRef:
@@ -26,6 +32,7 @@ spec:
       workspaces:
         - name: output
           workspace: shared-workspace
+
     - name: bash-validate
       runAfter:
         - clone-repo
@@ -34,6 +41,7 @@ spec:
       workspaces:
         - name: source
           workspace: shared-workspace
+
     - name: python-validate
       runAfter:
         - bash-validate
@@ -51,4 +59,8 @@ spec:
       workspaces:
         - name: source
           workspace: shared-workspace
-
+      params:
+        - name: git-user-name
+          value: $(params.git-user-name)
+        - name: git-user-email
+          value: $(params.git-user-email)

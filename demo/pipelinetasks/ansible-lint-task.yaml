@@ -5,45 +5,59 @@ metadata:
 spec:
   workspaces:
     - name: source
+  params:
+    - name: git-user-name
+      type: string
+    - name: git-user-email
+      type: string
   steps:
-    - name: lint-playbooks
+    - name: lint-playbooks-and-commit
       image: ghcr.io/ansible/creator-ee:latest
       script: |
         #!/bin/bash
+        set -e
         cd $(workspaces.source.path)
 
-        echo "🔍 Finding Ansible playbooks..."
-        playbooks=$(find . -name "*.yml")
+        timestamp=$(date +"%Y-%m-%dT%H-%M-%S")
+        summary_dir="lint-summaries/$timestamp"
+        mkdir -p "$summary_dir"
+        summary_file="$summary_dir/lint-summary.md"
 
+        echo "# Lint Summary ($timestamp)" > "$summary_file"
+
+        playbooks=$(find . -name "*.yml")
         if [ -z "$playbooks" ]; then
-          echo "❌ No .yml files found to lint."
-          echo "# Lint Summary" > lint-summary.md
-          echo "**No .yml files found to lint.**" >> lint-summary.md
+          echo "**No .yml files found.**" >> "$summary_file"
           exit 1
         fi
-
-        echo "# Lint Summary" > lint-summary.md
-        echo "" >> lint-summary.md
 
         error_count=0
         for file in $playbooks; do
-          echo "🧪 Linting $file..."
-          echo "## $file" >> lint-summary.md
-          ansible-lint "$file" >> lint-summary.md 2>&1
-          if [ $? -ne 0 ]; then
-            echo "❌ Lint failed for $file"
-            ((error_count++))
-          else
-            echo "✅ Lint passed for $file"
-            echo "✅ Passed" >> lint-summary.md
-          fi
-          echo "" >> lint-summary.md
+          echo "🧪 Linting $file"
+          echo "## $file" >> "$summary_file"
+          ansible-lint "$file" >> "$summary_file" 2>&1 || error_count=$((error_count+1))
+          echo "" >> "$summary_file"
         done
 
+        # Git config and push
+        git config user.name "$(params.git-user-name)"
+        git config user.email "$(params.git-user-email)"
+        git remote set-url origin https://$(cat /secrets/token)@github.com/rrbanda/ansible-openshift-pipelines.git
+
+        git add "$summary_file"
+        git commit -m "📋 Add lint summary for $timestamp"
+        git push origin HEAD:main
+
         if [ $error_count -gt 0 ]; then
-          echo "❌ $error_count file(s) failed linting."
+          echo "❌ $error_count playbook(s) failed lint."
           exit 1
         else
-          echo "✅ All playbooks passed linting."
-          exit 0
+          echo "✅ All playbooks passed lint."
         fi
+      volumeMounts:
+        - name: github-creds
+          mountPath: /secrets
+  volumes:
+    - name: github-creds
+      secret:
+        secretName: github-creds

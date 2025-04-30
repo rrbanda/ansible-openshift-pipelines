@@ -1,18 +1,24 @@
 apiVersion: tekton.dev/v1
 kind: PipelineRun
 metadata:
-  name: ansible-pipeline-run
+  name: ansible-pipeline-run-20250429-001
 spec:
   pipelineRef:
     name: ansible-pipeline
   params:
     - name: git-url
       value: https://github.com/rrbanda/ansible-openshift-pipelines.git
+    - name: git-revision
+      value: main
+    - name: git-user-name
+      value: ansible-bot
+    - name: git-user-email
+      value: bot@rrbanda.io
   workspaces:
     - name: shared-workspace
       volumeClaimTemplate:
         metadata:
-          name: shared-pvc
+          name: shared-pvc-20250429-001
         spec:
           accessModes: [ "ReadWriteOnce" ]
           resources:
