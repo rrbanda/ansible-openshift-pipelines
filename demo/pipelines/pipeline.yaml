@@ -64,3 +64,17 @@ spec:
           value: $(params.git-user-name)
         - name: git-user-email
           value: $(params.git-user-email)
+
+    - name: spotter-scan
+      runAfter:
+        - ansible-lint
+      taskRef:
+        name: spotter-scan
+      workspaces:
+        - name: source
+          workspace: shared-workspace
+      params:
+        - name: git-user-name
+          value: $(params.git-user-name)
+        - name: git-user-email
+          value: $(params.git-user-email)
