@@ -14,7 +14,7 @@ This repository demonstrates a complete Tekton pipeline that validates and promo
 
 ---
 
-## 🛠️ Implemented Stages
+## 🛠️ Implemented Pipeline Stages
 
 ```text
                     ┌──────────────────┐
@@ -48,7 +48,7 @@ This repository demonstrates a complete Tekton pipeline that validates and promo
 - 📝 Markdown-formatted lint summary committed to repo.
 - 🔐 GitHub credentials managed securely via OpenShift Secret.
 
----
+
 
 ## 🧾 Usage Instructions
 
@@ -63,30 +63,30 @@ This repository demonstrates a complete Tekton pipeline that validates and promo
     -n ansible-demo
   ```
 
----
+
 
 ### 🚀 Run the Pipeline
 
 ```bash
 oc apply -f demo/ -n ansible-demo
-oc create -f demo/pipelinerun.yaml -n ansible-demo
+oc create -f demo/pipelineruns/pipelinerun.yaml -n ansible-demo
 ```
 
 - Output will include lint results and a `lint-summary.md` in `lint-summaries/`.
 
----
+
 
 ## 📁 Folder Structure
 
 ```bash
 demo/
-├── tasks/
+├── pipelinetasks/tasks/
 │   ├── bash-validate.yaml
 │   ├── python-validate.yaml
 │   ├── ansible-lint-task.yaml
 │   └── promote-playbook.yaml  # (optional)
-├── pipeline.yaml
-├── pipelinerun.yaml
+├── pipelines/pipeline.yaml
+├── pipelineruns/pipelinerun.yaml
 ```
 
 ---
