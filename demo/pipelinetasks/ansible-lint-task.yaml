@@ -1,0 +1,49 @@
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: ansible-lint
+spec:
+  workspaces:
+    - name: source
+  steps:
+    - name: lint-playbooks
+      image: ghcr.io/ansible/creator-ee:latest
+      script: |
+        #!/bin/bash
+        cd $(workspaces.source.path)
+
+        echo "🔍 Finding Ansible playbooks..."
+        playbooks=$(find . -name "*.yml")
+
+        if [ -z "$playbooks" ]; then
+          echo "❌ No .yml files found to lint."
+          echo "# Lint Summary" > lint-summary.md
+          echo "**No .yml files found to lint.**" >> lint-summary.md
+          exit 1
+        fi
+
+        echo "# Lint Summary" > lint-summary.md
+        echo "" >> lint-summary.md
+
+        error_count=0
+        for file in $playbooks; do
+          echo "🧪 Linting $file..."
+          echo "## $file" >> lint-summary.md
+          ansible-lint "$file" >> lint-summary.md 2>&1
+          if [ $? -ne 0 ]; then
+            echo "❌ Lint failed for $file"
+            ((error_count++))
+          else
+            echo "✅ Lint passed for $file"
+            echo "✅ Passed" >> lint-summary.md
+          fi
+          echo "" >> lint-summary.md
+        done
+
+        if [ $error_count -gt 0 ]; then
+          echo "❌ $error_count file(s) failed linting."
+          exit 1
+        else
+          echo "✅ All playbooks passed linting."
+          exit 0
+        fi

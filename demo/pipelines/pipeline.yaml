@@ -34,4 +34,21 @@ spec:
       workspaces:
         - name: source
           workspace: shared-workspace
+    - name: python-validate
+      runAfter:
+        - bash-validate
+      taskRef:
+        name: python-validate
+      workspaces:
+        - name: source
+          workspace: shared-workspace
+
+    - name: ansible-lint
+      runAfter:
+        - python-validate
+      taskRef:
+        name: ansible-lint
+      workspaces:
+        - name: source
+          workspace: shared-workspace
 

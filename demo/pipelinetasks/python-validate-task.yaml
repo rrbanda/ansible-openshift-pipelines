@@ -1,0 +1,26 @@
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: python-validate
+spec:
+  workspaces:
+    - name: source
+  steps:
+    - name: python-check
+      image: python:3.11-slim
+      script: |
+        #!/usr/bin/env python3
+        import os, sys
+
+        filepath = os.path.join(os.environ["WORKSPACE"], "metadata.json")
+
+        print(f"🔍 Checking for metadata.json at {filepath}")
+        if os.path.exists(filepath):
+            print("✅ Found metadata.json")
+            sys.exit(0)
+        else:
+            print("❌ metadata.json not found")
+            sys.exit(1)
+      env:
+        - name: WORKSPACE
+          value: $(workspaces.source.path)

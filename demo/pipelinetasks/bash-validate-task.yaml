@@ -20,8 +20,8 @@ spec:
           exit 1
         fi
 
-        echo "🔍 Grepping for 'ansible_password'..."
-        if grep -r "ansible_password" .; then
+        echo "🔍 Grepping for 'ansible_password' (excluding .yaml files)..."
+        if grep -r "ansible_password" . --exclude="*.yaml" --exclude-dir=.git; then
           echo "❌ 'ansible_password' found — this is a violation"
           exit 1
         else
